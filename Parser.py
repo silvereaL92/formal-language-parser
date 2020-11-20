@@ -8,10 +8,10 @@ class Parser:
     def __init__(self):
         self.result = list()
         self.read()
-        self.non_terminals = self.result[0]
-        self.terminals = self.result[1]
-        self.start_symbol = self.result[2]
-        self.transitions = self.result[3]
+        self.non_terminals: set = self.result[0]
+        self.terminals: set = self.result[1]
+        self.start_symbol: str = self.result[2]
+        self.transitions: dict = self.result[3]
 
         self.current_state = NORMAL_STATE
         self.current_symbol_pos = 1
@@ -32,6 +32,8 @@ class Parser:
             self.result.append(terminals)
             line = input_file.readline()
             start_symbol = line[:-1]
+            if start_symbol not in non_terminals:
+                raise Exception("Start symbol is not in the set of non terminals")
             self.result.append(start_symbol)
             transitions = dict()
             for line in input_file:
@@ -39,6 +41,11 @@ class Parser:
                 transition_start = line[0]
                 transition_destination = line[1]
                 transition_destination = transition_destination.split()
+                if transition_start not in non_terminals:
+                    raise Exception("Production start symbol not in set of non terminals")
+                for symbol in transition_destination:
+                    if symbol not in non_terminals or symbol not in terminals:
+                        raise Exception("Production result symbol not in the set of terminals or non terminals")
                 if transition_start not in transitions.keys():
                     transitions[transition_start] = list()
                 transitions[transition_start].append(transition_destination)
@@ -73,6 +80,14 @@ class Parser:
                     transition_string = transition_string[:-3]
                     print(key, "->", transition_string)
                 continue
+            if user_option == "5":
+                while True:
+                    non_terminal = input("input the non terminal you want to see the productions for: ")
+                    if non_terminal not in self.non_terminals:
+                        print("symbol not in set of non terminals, please try again")
+                        continue
+                    print(self.production_for(non_terminal))
+                    break
 
     def production_for(self, non_terminal):
         if non_terminal not in self.transitions.keys():
