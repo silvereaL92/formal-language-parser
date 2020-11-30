@@ -5,20 +5,75 @@ ERROR_STATE = "e"
 
 
 class Parser:
-    def __init__(self):
+    def __init__(self, input_sequence=""):
         self.result = list()
         self.read()
         self.non_terminals: set = self.result[0]
         self.terminals: set = self.result[1]
         self.start_symbol: str = self.result[2]
         self.transitions: dict = self.result[3]
+        self.input_sequence = input_sequence
 
         self.current_state = NORMAL_STATE
-        self.current_symbol_pos = 1
+        self.current_symbol_pos = 0
+        self.working_stack = list()
+        self.input_stack = list()
+        self.input_stack.append(self.start_symbol)
+
+    def printall(self):
+        print(self.current_state)
+        print(self.current_symbol_pos)
+        print(self.working_stack)
+        print(self.input_stack)
+
+    def check(self, sequence=None):
+        self.current_state = NORMAL_STATE
+        self.current_symbol_pos = 0
         self.working_stack = list()
         self.input_stack = list()
         self.input_stack.append(self.start_symbol)
         self.transition_indexes = list()
+        if sequence is not None:
+            self.input_sequence = sequence
+
+        if self.left_recursive():
+            return
+
+        while self.current_state != ERROR_STATE and self.current_state != FINAL_STATE:
+            if self.current_state == NORMAL_STATE and self.current_symbol_pos == len(self.input_sequence) \
+                    and len(self.input_stack) == 0:
+                self.success()
+                self.printall()
+            else:
+                try:
+                    if self.input_stack[-1] in self.non_terminals and self.current_state == NORMAL_STATE:
+                        self.expand()
+                        self.printall()
+                    else:
+                        if self.input_stack[-1] in self.terminals and self.current_state == NORMAL_STATE:
+                            if self.current_symbol_pos >= len(self.input_sequence) or \
+                                    self.input_stack[-1] != self.input_sequence[self.current_symbol_pos]:
+                                self.momentary_insuccess()
+                                self.printall()
+                            else:
+                                self.advance()
+                                self.printall()
+
+                        if self.current_state == BACK_STATE:
+                            if self.working_stack[-1] in self.terminals and self.current_state == BACK_STATE:
+                                self.back()
+                                self.printall()
+                            else:
+                                self.another_try()
+                                self.printall()
+                except IndexError:
+                    self.current_state = ERROR_STATE
+
+        if self.current_state == ERROR_STATE:
+            print("Sequence denied")
+
+        if self.current_state == FINAL_STATE:
+            print("Sequence accepted")
 
     def read(self):
         with open("grammar.txt", "r") as input_file:
@@ -44,7 +99,7 @@ class Parser:
                 if transition_start not in non_terminals:
                     raise Exception("Production start symbol not in set of non terminals")
                 for symbol in transition_destination:
-                    if symbol not in non_terminals or symbol not in terminals:
+                    if symbol not in non_terminals and symbol not in terminals:
                         raise Exception("Production result symbol not in the set of terminals or non terminals")
                 if transition_start not in transitions.keys():
                     transitions[transition_start] = list()
@@ -93,18 +148,65 @@ class Parser:
         if non_terminal not in self.transitions.keys():
             return None
         return self.transitions[non_terminal]
-    #
-    # def expand(self):
-    #     self.working_stack.append(str(self.input_stack[0]) + str(self.current_symbol_pos))
-    #     current_prod = self.transitions[self.input_stack[0]][self.transition_indexes[self.current_symbol_pos]]
-    #     self.input_stack.reverse()
-    #     self.input_stack = self.input_stack[:-1]
-    #     current_prod = current_prod[::-1]
-    #     self.input_stack.append(current_prod)
-    #     self.input_stack.reverse()
+
+    def expand(self):
+        current_non_terminal = self.input_stack.pop()
+        self.working_stack.append(
+            {
+                "symbol": current_non_terminal,
+                "production_index": 0
+            }
+        )
+        current_production: list = self.transitions[current_non_terminal][0][:]
+        current_production.reverse()
+        for symbol in current_production:
+            self.input_stack.append(symbol)
+
+    def advance(self):
+        self.current_symbol_pos += 1
+        self.working_stack.append(self.input_stack.pop())
+
+    def momentary_insuccess(self):
+        self.current_state = BACK_STATE
+
+    def back(self):
+        self.current_symbol_pos -= 1
+        self.input_stack.append(self.working_stack.pop())
+
+    def another_try(self):
+        current = self.working_stack.pop()
+        current_index = current["production_index"]
+        current_symbol = current["symbol"]
+        last_production = self.transitions[current_symbol][current_index]
+        for i in range(len(last_production)):
+            self.input_stack.pop()
+
+        # there is another production
+        if current_index + 1 < len(self.transitions[current_symbol]):
+            current_index += 1
+            self.current_state = NORMAL_STATE
+            self.working_stack.append(
+                {
+                    "symbol": current_symbol,
+                    "production_index": current_index
+                }
+            )
+            current_production: list = self.transitions[current_symbol][current_index][:]
+            current_production.reverse()
+            for sym in current_production:
+                self.input_stack.append(sym)
+        # no more productions available
+        else:
+            # back to the start without new productions -> not a match
+            if self.current_symbol_pos == 0 and current_symbol == self.start_symbol:
+                self.current_state = ERROR_STATE
+                return
+            self.input_stack.append(current_symbol)
+
+    def success(self):
+        self.current_state = FINAL_STATE
 
 
 if __name__ == "__main__":
-    p = Parser()
-    print(p.production_for("S"))
-    p.menu()
+    p = Parser("aacbc")
+    p.check()
