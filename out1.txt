@@ -1,0 +1,10 @@
+Sequence accepted
+[0, 'S', None, None]
+[1, 'a', 0, None]
+[2, 'S', 0, 1]
+[3, 'b', 0, 2]
+[4, 'S', 0, 3]
+[5, 'a', 2, None]
+[6, 'S', 2, 5]
+[7, 'c', 6, None]
+[8, 'c', 4, None]

@@ -1,0 +1,64 @@
+{program,declaration,declarationList,naturalNumber,type,compoundStatement,statement,statementList,simpleStatement,assignmentStatement,assignmentOperator,ioStatement,writeList,expression,term,factor,structuredStatement,ifStatement,whileStatement,condition,relation}
+{{,},[,],;,int,char,=,+=,-=,*=,/=,read,write,(,),*,if,else,while,<,<=,==,>=,>,!=,+,identifier,constant}
+program
+program\;{ declarationList }
+program\;{ statementList }
+program\;{ declarationList statementList }
+program\;{ statementList declarationList }
+program\;{ declarationList statementList declarationList }
+program\;{ statementList declarationList statementList }
+program\;{ declarationList statementList declarationList statementList }
+program\;{ statementList declarationList statementList declarationList }
+declarationList\;declaration
+declarationList\;declaration declarationList
+statementList\;statement
+statementList\;statement statementList
+declaration\;type identifier ;
+declaration\;type identifier [ constant ] ;
+declaration\;type identifier [ identifier ] ;
+declaration\;type identifier = constant ;
+type\;int
+type\;char
+compoundStatement\;{ statement }
+statement\;simpleStatement
+statement\;structuredStatement
+simpleStatement\;assignmentStatement
+simpleStatement\;ioStatement
+assignmentStatement\;identifier assignmentOperator expression ;
+assignmentOperator\;=
+assignmentOperator\;/=
+assignmentOperator\;-=
+assignmentOperator\;*=
+assignmentOperator\;+=
+ioStatement\;read ( identifier ) ;
+ioStatement\;read ( identifier [ identifier ] ) ;
+ioStatement\;write ( writeList ) ;
+writeList\;expression
+writeList\;expression writeList
+expression\;term + expression
+expression\;term
+term\;factor * term
+term\;factor
+factor\;( expression )
+factor\;identifier
+factor\;constant
+factor\;identifier [ identifier ]
+factor\;identifier [ constant ]
+structuredStatement\;ifStatement
+structuredStatement\;whileStatement
+structuredStatement\;compoundStatement
+ifStatement\;if ( condition ) statement
+ifStatement\;if ( condition ) { statementList }
+ifStatement\;if ( condition ) statement else statement
+ifStatement\;if ( condition ) { statementList } else statement
+ifStatement\;if ( condition ) { statementList } else { statementList }
+ifStatement\;if ( condition ) statement else { statementList }
+whileStatement\;while ( condition ) statement
+whileStatement\;while ( condition ) { statementList }
+condition\;expression relation expression
+relation\;<
+relation\;<=
+relation\;==
+relation\;>=
+relation\;>
+relation\;!=

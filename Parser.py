@@ -1,3 +1,5 @@
+import string
+
 NORMAL_STATE = "q"
 BACK_STATE = "b"
 FINAL_STATE = "f"
@@ -12,13 +14,19 @@ class Parser:
         self.terminals: set = self.result[1]
         self.start_symbol: str = self.result[2]
         self.transitions: dict = self.result[3]
-        self.input_sequence = input_sequence
+        self.input_sequence = input_sequence.translate({ord(c): None for c in string.whitespace})
 
         self.current_state = NORMAL_STATE
         self.current_symbol_pos = 0
         self.working_stack = list()
         self.input_stack = list()
         self.input_stack.append(self.start_symbol)
+
+    def check_input_not_equal(self):
+        return self.current_symbol_pos >= len(self.input_sequence) or \
+               self.input_stack[-1] != self.input_sequence.strip()[
+                                       self.current_symbol_pos:
+                                       self.current_symbol_pos + len(self.input_stack[-1])]
 
     def check(self, sequence=None):
         self.current_state = NORMAL_STATE
@@ -27,44 +35,71 @@ class Parser:
         self.input_stack = list()
         self.input_stack.append(self.start_symbol)
         if sequence is not None:
-            self.input_sequence = sequence
+            self.input_sequence = sequence.translate({ord(c): None for c in string.whitespace})
 
         while self.current_state != ERROR_STATE and self.current_state != FINAL_STATE:
             if self.current_state == NORMAL_STATE and self.current_symbol_pos == len(self.input_sequence) \
                     and len(self.input_stack) == 0:
                 self.success()
-                self.printall()
             else:
                 # noinspection PyBroadException
                 try:
                     if self.input_stack[-1] in self.non_terminals and self.current_state == NORMAL_STATE:
                         self.expand()
-                        self.printall()
                     else:
                         if self.input_stack[-1] in self.terminals and self.current_state == NORMAL_STATE:
-                            if self.current_symbol_pos >= len(self.input_sequence) or \
-                                    self.input_stack[-1] != self.input_sequence[self.current_symbol_pos]:
+                            if self.check_input_not_equal():
                                 self.momentary_insuccess()
-                                self.printall()
                             else:
                                 self.advance()
-                                self.printall()
 
                         if self.current_state == BACK_STATE:
                             if self.working_stack[-1] in self.terminals:
                                 self.back()
-                                self.printall()
                             else:
                                 self.another_try()
-                                self.printall()
                 except Exception:
                     self.current_state = ERROR_STATE
 
         if self.current_state == ERROR_STATE:
-            print("Sequence denied")
+            with open("out1.txt", "w") as out:
+                out.writelines("Sequence denied\n")
 
         if self.current_state == FINAL_STATE:
-            print("Sequence accepted")
+            table = self.table()
+            with open("out1.txt", "w") as out:
+                out.writelines("Sequence accepted\n")
+                for row in table:
+                    out.writelines(str(row))
+                    out.writelines("\n")
+
+    def table(self):
+        used_productions = list()
+        for el in self.working_stack:
+            if type(el) is dict:
+                used_productions.append(el)
+
+        table = list()
+        table.append([0, self.start_symbol, None, None])
+
+        current_state = [[self.start_symbol, 0]]
+        univ_idx = 1
+        for el in used_productions:
+            for idx, element in enumerate(current_state):
+                symbol = element[0]
+                symbol_idx = element[1]
+                production_index = el["production_index"]
+                if symbol in self.non_terminals:
+                    production = list()
+                    sibling = None
+                    for prod in self.transitions[symbol][production_index]:
+                        table.append([univ_idx, prod, symbol_idx, sibling])
+                        sibling = univ_idx
+                        production.append([prod, univ_idx])
+                        univ_idx += 1
+                    current_state = current_state[:idx] + production + current_state[idx + 1:]
+                    break
+        return table
 
     def production_for(self, non_terminal):
         if non_terminal not in self.transitions.keys():
@@ -85,14 +120,14 @@ class Parser:
             self.input_stack.append(symbol)
 
     def advance(self):
-        self.current_symbol_pos += 1
+        self.current_symbol_pos += len(self.input_stack[-1])
         self.working_stack.append(self.input_stack.pop())
 
     def momentary_insuccess(self):
         self.current_state = BACK_STATE
 
     def back(self):
-        self.current_symbol_pos -= 1
+        self.current_symbol_pos -= len(self.working_stack[-1])
         self.input_stack.append(self.working_stack.pop())
 
     def another_try(self):
@@ -128,37 +163,32 @@ class Parser:
     def success(self):
         self.current_state = FINAL_STATE
 
-    def printall(self):
-        print(self.current_state)
-        print(self.current_symbol_pos)
-        print(self.working_stack)
-        print(self.input_stack)
-
     def read(self):
-        with open("grammar.txt", "r") as input_file:
-            line = input_file.readline()
-            line = line[1:-2]
-            non_terminals = line.split(",")
+        with open("g1.txt", "r") as input_file:
+            grammar_line = input_file.readline()
+            grammar_line = grammar_line[1:-2]
+            non_terminals = grammar_line.split(",")
             self.result.append(non_terminals)
-            line = input_file.readline()
-            line = line[1:-2]
-            terminals = line.split(",")
+            grammar_line = input_file.readline()
+            grammar_line = grammar_line[1:-2]
+            terminals = grammar_line.split(",")
             self.result.append(terminals)
-            line = input_file.readline()
-            start_symbol = line[:-1]
+            grammar_line = input_file.readline()
+            start_symbol = grammar_line[:-1]
             if start_symbol not in non_terminals:
                 raise Exception("Start symbol is not in the set of non terminals")
             self.result.append(start_symbol)
             transitions = dict()
-            for line in input_file:
-                line = line.split(";")
-                transition_start = line[0]
-                transition_destination = line[1]
+            for grammar_line in input_file:
+                grammar_line = grammar_line.split("\;")
+                transition_start = grammar_line[0]
+                transition_destination = grammar_line[1]
                 transition_destination = transition_destination.split()
                 if transition_start not in non_terminals:
                     raise Exception("Production start symbol not in set of non terminals")
                 for symbol in transition_destination:
                     if symbol not in non_terminals and symbol not in terminals:
+                        print(symbol)
                         raise Exception("Production result symbol not in the set of terminals or non terminals")
                 if transition_start not in transitions.keys():
                     transitions[transition_start] = list()
@@ -189,8 +219,8 @@ class Parser:
                     transition_string = ""
                     for option in self.transitions[key]:
                         for token in option:
-                            transition_string += token
-                        transition_string += " | "
+                            transition_string += token + " "
+                        transition_string += "| "
                     transition_string = transition_string[:-3]
                     print(key, "->", transition_string)
                 continue
@@ -207,3 +237,9 @@ class Parser:
 if __name__ == "__main__":
     p = Parser("aacbc")
     p.check()
+    # p = Parser()
+    # with open("pif.txt", "r") as f:
+    #     program = ""
+    #     for line in f:
+    #         program += line.split(" --> ")[0] + " "
+    #     p.check(program)
