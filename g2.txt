@@ -1,18 +1,11 @@
-{program,declaration,declarationList,naturalNumber,type,compoundStatement,statement,statementList,simpleStatement,assignmentStatement,assignmentOperator,ioStatement,writeList,expression,term,factor,structuredStatement,ifStatement,whileStatement,condition,relation}
+{program,declaration,naturalNumber,type,compoundStatement,statement,simpleStatement,assignmentStatement,assignmentOperator,ioStatement,writeList,expression,term,factor,structuredStatement,ifStatement,whileStatement,condition,relation,item,itemList}
 {{,},[,],;,int,char,=,+=,-=,*=,/=,read,write,(,),*,if,else,while,<,<=,==,>=,>,!=,+,identifier,constant}
 program
-program\;{ declarationList }
-program\;{ statementList }
-program\;{ declarationList statementList }
-program\;{ statementList declarationList }
-program\;{ declarationList statementList declarationList }
-program\;{ statementList declarationList statementList }
-program\;{ declarationList statementList declarationList statementList }
-program\;{ statementList declarationList statementList declarationList }
-declarationList\;declaration
-declarationList\;declaration declarationList
-statementList\;statement
-statementList\;statement statementList
+program\;{ itemList }
+itemList\;item
+itemList\;item itemList
+item\;statement
+item\;declaration
 declaration\;type identifier ;
 declaration\;type identifier [ constant ] ;
 declaration\;type identifier [ identifier ] ;
@@ -47,14 +40,14 @@ factor\;identifier [ constant ]
 structuredStatement\;ifStatement
 structuredStatement\;whileStatement
 structuredStatement\;compoundStatement
-ifStatement\;if ( condition ) statement
-ifStatement\;if ( condition ) { statementList }
-ifStatement\;if ( condition ) statement else statement
-ifStatement\;if ( condition ) { statementList } else statement
-ifStatement\;if ( condition ) { statementList } else { statementList }
-ifStatement\;if ( condition ) statement else { statementList }
-whileStatement\;while ( condition ) statement
-whileStatement\;while ( condition ) { statementList }
+ifStatement\;if ( condition ) item
+ifStatement\;if ( condition ) { itemList }
+ifStatement\;if ( condition ) item else item
+ifStatement\;if ( condition ) { itemList } else item
+ifStatement\;if ( condition ) { itemList } else { item }
+ifStatement\;if ( condition ) item else { itemList }
+whileStatement\;while ( condition ) item
+whileStatement\;while ( condition ) { itemList }
 condition\;expression relation expression
 relation\;<
 relation\;<=
